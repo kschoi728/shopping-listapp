@@ -172,11 +172,22 @@
     <button class="clear-btn" onclick="clearChecked()" id="clearBtn" style="display:none">완료 항목 삭제</button>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    let items = JSON.parse(localStorage.getItem('shoppingList') || '[]');
+    const SUPABASE_URL = 'https://pbzbwtptutfilisszmyd.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiemJ3dHB0dXRmaWxpc3N6bXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDcwMzYsImV4cCI6MjA5MDc4MzAzNn0.wOoDy6LnNFFCQtBNcXgetIKg6XyMOaGqmO4xsIl7FjM';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function save() {
-      localStorage.setItem('shoppingList', JSON.stringify(items));
+    let items = [];
+
+    async function loadItems() {
+      const { data, error } = await supabase
+        .from('shopping_items')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (error) { console.error(error); return; }
+      items = data;
+      render();
     }
 
     function render() {
@@ -199,14 +210,14 @@
       stats.textContent = `${items.length}개 항목 중 ${checked}개 완료`;
       clearBtn.style.display = checked > 0 ? 'block' : 'none';
 
-      items.forEach((item, idx) => {
+      items.forEach((item) => {
         const li = document.createElement('li');
         if (item.done) li.classList.add('checked');
 
         const cb = document.createElement('input');
         cb.type = 'checkbox';
         cb.checked = item.done;
-        cb.onchange = () => toggle(idx);
+        cb.onchange = () => toggle(item.id);
 
         const span = document.createElement('span');
         span.className = 'item-text';
@@ -216,7 +227,7 @@
         del.className = 'delete-btn';
         del.innerHTML = '✕';
         del.title = '삭제';
-        del.onclick = () => remove(idx);
+        del.onclick = () => remove(item.id);
 
         li.appendChild(cb);
         li.appendChild(span);
@@ -225,40 +236,52 @@
       });
     }
 
-    function addItem() {
+    async function addItem() {
       const input = document.getElementById('itemInput');
       const name = input.value.trim();
       if (!name) return;
-      items.push({ name, done: false });
-      save();
-      render();
+      const { error } = await supabase
+        .from('shopping_items')
+        .insert({ name, done: false });
+      if (error) { console.error(error); return; }
       input.value = '';
       input.focus();
+      await loadItems();
     }
 
-    function toggle(idx) {
-      items[idx].done = !items[idx].done;
-      save();
-      render();
+    async function toggle(id) {
+      const item = items.find(i => i.id === id);
+      const { error } = await supabase
+        .from('shopping_items')
+        .update({ done: !item.done })
+        .eq('id', id);
+      if (error) { console.error(error); return; }
+      await loadItems();
     }
 
-    function remove(idx) {
-      items.splice(idx, 1);
-      save();
-      render();
+    async function remove(id) {
+      const { error } = await supabase
+        .from('shopping_items')
+        .delete()
+        .eq('id', id);
+      if (error) { console.error(error); return; }
+      await loadItems();
     }
 
-    function clearChecked() {
-      items = items.filter(i => !i.done);
-      save();
-      render();
+    async function clearChecked() {
+      const { error } = await supabase
+        .from('shopping_items')
+        .delete()
+        .eq('done', true);
+      if (error) { console.error(error); return; }
+      await loadItems();
     }
 
     document.getElementById('itemInput').addEventListener('keydown', e => {
       if (e.key === 'Enter') addItem();
     });
 
-    render();
+    loadItems();
   </script>
 </body>
 </html>
