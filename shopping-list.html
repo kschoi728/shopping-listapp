@@ -176,12 +176,12 @@
   <script>
     const SUPABASE_URL = 'https://pbzbwtptutfilisszmyd.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiemJ3dHB0dXRmaWxpc3N6bXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDcwMzYsImV4cCI6MjA5MDc4MzAzNn0.wOoDy6LnNFFCQtBNcXgetIKg6XyMOaGqmO4xsIl7FjM';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let items = [];
 
     async function loadItems() {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('shopping_items')
         .select('*')
         .order('created_at', { ascending: true });
@@ -240,7 +240,7 @@
       const input = document.getElementById('itemInput');
       const name = input.value.trim();
       if (!name) return;
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('shopping_items')
         .insert({ name, done: false });
       if (error) { console.error(error); return; }
@@ -251,7 +251,7 @@
 
     async function toggle(id) {
       const item = items.find(i => i.id === id);
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('shopping_items')
         .update({ done: !item.done })
         .eq('id', id);
@@ -260,7 +260,7 @@
     }
 
     async function remove(id) {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('shopping_items')
         .delete()
         .eq('id', id);
@@ -269,7 +269,7 @@
     }
 
     async function clearChecked() {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('shopping_items')
         .delete()
         .eq('done', true);
